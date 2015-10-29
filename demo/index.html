@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Recorder</title>
+
+	<style type="text/css">
+		#volume-controls {
+			margin-bottom: 10px;
+		}
+
+		#record-controls {
+			margin-bottom: 50px;
+		}
+
+		#download.hidden {
+			display: none;
+		}
+
+		#duration {
+			margin-left: 10px;
+			font-family: monospace;
+		}
+	</style>
+</head>
+<body>
+	<h1>Recorder</h1>
+
+	<div id="volume-controls">
+		Volume: <input id="volume" type="range" value="100"/>
+	</div>
+	<div id="record-controls">
+		<button id="record-button">Record</button>
+		<button id="pause-button" disabled>Pause</button>
+		<button id="stop-button" disabled>Stop</button>
+		<span id="duration">00:00</span>
+	</div>
+
+	<audio id="player" controls></audio>
+	<a id="download" class="hidden" download="microphone.wav" href="">Download</a>
+
+	<script type="text/javascript" src="/demo/bundle.js"></script>
+</body>
+</html>
