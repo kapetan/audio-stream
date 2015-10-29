@@ -66,9 +66,6 @@ record.addEventListener('click', function() {
 			video: false,
 			audio: true
 		}, function(mediaStream) {
-			console.dir(mediaStream);
-			console.dir(mediaStream.getAudioTracks()[0]);
-
 			stream = audio(mediaStream, {
 				volume: volume.value / 100
 			});
