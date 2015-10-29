@@ -34,4 +34,4 @@ navigator.getUserMedia({
 });
 ```
 
-The constructor accepts numbers of channels and microphone volume as options.
+The constructor accepts number of channels and microphone volume as options.
