@@ -40,6 +40,7 @@ module.exports = function(media, processor) {
 			if(currentTime === media.currentTime) {
 				debug('current time unchanged', currentTime, !!timeout);
 
+				// At the begining it can take some time before current time is updated.
 				if(!timeout) timeout = setTimeout(onended, !currentTime ? 5000 : 1000);
 				timeBuffer.push(e);
 				return;
@@ -95,13 +96,13 @@ module.exports = function(media, processor) {
 		clearInterval(interval);
 	};
 
-	var restore = function() {
+	var restart = function() {
 		processor.addEventListener('audioprocess', onaudioprocess, false);
 		scheduleInterval();
 	};
 
 	that.suspend = suspend;
-	that.restore = restore;
+	that.restart = restart;
 	that.destroy = onended;
 
 	if(track) track.addEventListener('ended', onended, false);
@@ -110,7 +111,7 @@ module.exports = function(media, processor) {
 	else if(hasEnded) media.addEventListener('ended', onended, false);
 	else if(hasCurrentTime) currentTime = media.currentTime;
 
-	restore();
+	restart();
 
 	return that;
 };

@@ -37,7 +37,7 @@ record.addEventListener('click', function() {
 	}, 500);
 
 	if(sourceStream) {
-		sourceStream.restore();
+		sourceStream.restart();
 	} else {
 		getUserMedia.call(navigator, {
 			video: false,

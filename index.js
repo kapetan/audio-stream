@@ -33,7 +33,7 @@ var AudioStream = function(media, options) {
 
 	this._destroyed = false;
 	this._suspend = noop;
-	this._restore = noop;
+	this._restart = noop;
 	this._stop = noop;
 	this._record = once(function() {
 		if(capture.ended(media)) {
@@ -84,9 +84,9 @@ var AudioStream = function(media, options) {
 			that.suspend();
 		};
 
-		self._restore = function() {
-			debug('restore');
-			that.restore();
+		self._restart = function() {
+			debug('restart');
+			that.restart();
 		};
 
 		self._stop = function() {
@@ -126,8 +126,8 @@ AudioStream.prototype.suspend = function() {
 	this._suspend();
 };
 
-AudioStream.prototype.restore = function() {
-	this._restore();
+AudioStream.prototype.restart = function() {
+	this._restart();
 };
 
 AudioStream.prototype.destroy = function(err) {
