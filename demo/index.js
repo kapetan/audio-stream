@@ -1,39 +1,16 @@
 var audio = require('../');
+var wave = require('./wave-stream');
 
 var getUserMedia = navigator.getUserMedia ||
 	navigator.webkitGetUserMedia ||
 	navigator.mozGetUserMedia;
 
-var HEADER_LENGTH = 44;
-
-var writeHeader = function(dataLength, options) {
-	var header = new Buffer(HEADER_LENGTH);
-
-	header.write('RIFF', 0, 4, 'ascii');
-	header.writeUInt32LE(dataLength + HEADER_LENGTH - 8, 4);
-	header.write('WAVE', 8, 4, 'ascii');
-	header.write('fmt ', 12, 4, 'ascii');
-	header.writeUInt32LE(16, 16);
-	header.writeUInt16LE(options.audioFormat, 20);
-	header.writeUInt16LE(options.channels, 22);
-	header.writeUInt32LE(options.sampleRate, 24);
-	header.writeUInt32LE(options.byteRate, 28);
-	header.writeUInt16LE(options.blockAlign, 32);
-	header.writeUInt16LE(options.bitDepth, 34);
-	header.write('data', 36, 4, 'ascii');
-	header.writeUInt32LE(dataLength, 40);
-
-	return header;
-};
-
 var pad = function(n) {
 	return n < 10 ? ('0' + n) : n;
 };
 
-var header = null;
-var buffer = [];
-var dataLength = 0;
-var stream = null;
+var mediaStream = null;
+var sourceStream = null;
 
 var record = document.getElementById('record-button');
 var pause = document.getElementById('pause-button');
@@ -51,33 +28,33 @@ record.addEventListener('click', function() {
 	stop.removeAttribute('disabled');
 
 	setInterval(function() {
-		if(header) {
-			var seconds = Math.floor(stream.duration);
+		if(sourceStream) {
+			var seconds = Math.floor(sourceStream.duration);
 			var minutes = Math.floor(seconds / 60);
 
 			duration.innerHTML = pad(minutes) + ':' + pad(seconds - minutes * 60);
 		}
 	}, 500);
 
-	if(stream) {
-		stream.resume();
+	if(sourceStream) {
+		sourceStream.restore();
 	} else {
 		getUserMedia.call(navigator, {
 			video: false,
 			audio: true
-		}, function(mediaStream) {
-			stream = audio(mediaStream, {
+		}, function(result) {
+			mediaStream = window.ms = result;
+			sourceStream = audio(mediaStream, {
 				volume: volume.value / 100
 			});
 
-			stream.on('header', function(data) {
-				header = data;
-			});
-
-			stream.on('data', function(data) {
-				dataLength += data.length;
-				buffer.push(data);
-			});
+			sourceStream
+				.pipe(wave())
+				.on('url', function(url) {
+					player.src = url;
+					download.href = url;
+					download.classList.remove('hidden');
+				});
 		}, function(err) {
 			console.error(err);
 		});
@@ -88,21 +65,12 @@ pause.addEventListener('click', function() {
 	record.removeAttribute('disabled');
 	pause.setAttribute('disabled', 'disabled');
 
-	stream.pause();
+	sourceStream.suspend();
 });
 
 stop.addEventListener('click', function() {
 	pause.setAttribute('disabled', 'disabled');
 	stop.setAttribute('disabled', 'disabled');
 
-	stream.destroy();
-
-	buffer.unshift(writeHeader(dataLength, header));
-
-	var blob = new Blob(buffer, { type: 'audio/wav' });
-	var url = URL.createObjectURL(blob);
-
-	player.src = url;
-	download.href = url;
-	download.classList.remove('hidden');
+	mediaStream.stop();
 });
