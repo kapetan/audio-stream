@@ -2,8 +2,6 @@ var events = require('events');
 var once = require('once');
 var debug = require('debug')('audio-stream:capture');
 
-var noop = function() {};
-
 var isActive = function(media, track) {
 	if(media.getAudioTracks) return !!media.getAudioTracks().length;
 	if(track) return track.readyState !== 'ended';
