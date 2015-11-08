@@ -3,8 +3,6 @@ var events = require('events');
 var once = require('once');
 var debug = require('debug')('audio-stream:capture');
 
-var noop = function() {};
-
 var isActive = function(media, track) {
 	if(media.getAudioTracks) return !!media.getAudioTracks().length;
 	if(track) return track.readyState !== 'ended';
@@ -124,6 +122,7 @@ module.exports.ended = function(media) {
 
 },{"debug":32,"events":10,"once":36}],2:[function(require,module,exports){
 var audio = require('../');
+var pcm = require('pcm-stream');
 var wave = require('./wave-stream');
 
 var getUserMedia = navigator.getUserMedia ||
@@ -168,13 +167,27 @@ record.addEventListener('click', function() {
 			video: false,
 			audio: true
 		}, function(result) {
+			var w = wave();
+
 			mediaStream = window.ms = result;
-			sourceStream = audio(mediaStream, {
-				volume: volume.value / 100
-			});
+			sourceStream = audio(mediaStream, { volume: volume.value / 100 });
 
 			sourceStream
-				.pipe(wave())
+				.on('header', function(header) {
+					var channels = header.channels;
+					var sampleRate = header.sampleRate;
+
+					w.setHeader({
+						audioFormat: 1,
+						channels: channels,
+						sampleRate: sampleRate,
+						byteRate: sampleRate * channels * 2,
+						blockAlign: channels * 2,
+						bitDepth: 16
+					});
+				})
+				.pipe(pcm())
+				.pipe(w)
 				.on('url', function(url) {
 					player.src = url;
 					download.href = url;
@@ -200,7 +213,7 @@ stop.addEventListener('click', function() {
 	mediaStream.stop();
 });
 
-},{"../":4,"./wave-stream":3}],3:[function(require,module,exports){
+},{"../":4,"./wave-stream":3,"pcm-stream":37}],3:[function(require,module,exports){
 (function (Buffer){
 var stream = require('stream');
 var util = require('util');
@@ -239,12 +252,6 @@ var WaveStream = function() {
 	this._buffer = [EMPTY_BUFFER];
 	this._length = 0;
 
-	this.on('pipe', function(src) {
-		src.once('header', function(header) {
-			self._header = header;
-		});
-	});
-
 	this.once('finish', function() {
 		var buffer = self._buffer;
 		buffer[0] = writeHeader(self._length, self._header);
@@ -257,6 +264,10 @@ var WaveStream = function() {
 };
 
 util.inherits(WaveStream, stream.Writable);
+
+WaveStream.prototype.setHeader = function(header) {
+	this._header = header;
+};
 
 WaveStream.prototype._write = function(data, encoding, callback) {
 	this._buffer.push(data);
@@ -342,6 +353,7 @@ var AudioStream = function(media, options) {
 
 			self.duration += input.duration;
 			self.samples += numberOfSamples;
+
 			self.push(data);
 		});
 
@@ -432,7 +444,7 @@ AudioStream.prototype._emitHeader = function(sampleRate, channels) {
 module.exports = AudioStream;
 
 }).call(this,require("buffer").Buffer)
-},{"./capture":1,"buffer":6,"debug":32,"once":36,"stream":28,"util":31,"xtend":37}],5:[function(require,module,exports){
+},{"./capture":1,"buffer":6,"debug":32,"once":36,"stream":28,"util":31,"xtend":38}],5:[function(require,module,exports){
 
 },{}],6:[function(require,module,exports){
 (function (global){
@@ -6208,6 +6220,83 @@ function once (fn) {
 }
 
 },{"wrappy":35}],37:[function(require,module,exports){
+(function (Buffer){
+var stream = require('stream');
+var util = require('util');
+
+var HIGH_WATER_MARK = Math.pow(2, 14) * 16;
+
+var PcmStream = function() {
+	if(!(this instanceof PcmStream)) return new PcmStream();
+	stream.Transform.call(this, { highWaterMark: HIGH_WATER_MARK });
+
+	this._destroyed = false;
+	this._buffer = [];
+	this._bufferLength = 0;
+};
+
+util.inherits(PcmStream, stream.Transform);
+
+PcmStream.prototype.destroy = function(err) {
+	if(this._destroyed) return;
+	this._destroyed = true;
+
+	if(err) this.emit('error', err);
+	this.emit('close');
+};
+
+PcmStream.prototype._transform = function(data, encoding, callback) {
+	this._pushBuffer(data);
+
+	if(this._bufferLength < 4) {
+		return callback();
+	}
+
+	data = Buffer.concat(this._buffer, this._bufferLength);
+	this._resetBuffer();
+
+	var floatsLength = Math.floor(data.length / 4) * 4;
+	var intsLength = floatsLength / 2;
+	var intsBuffer = new Buffer(intsLength);
+
+	for(var i = 0; i < floatsLength; i += 4) {
+		var f = data.readFloatLE(i);
+
+		f = f * 32768;
+		if(f > 32767) f = 32767;
+		if(f < -32768) f = -32768;
+
+		var j = Math.floor(f);
+		intsBuffer.writeInt16LE(j, i / 2);
+	}
+
+	if(data.length > floatsLength) {
+		var restBuffer = data.slice(floatsLength);
+		this._pushBuffer(restBuffer);
+	}
+
+	callback(null, intsBuffer);
+};
+
+PcmStream.prototype._flush = function(callback) {
+	if(this._bufferLength) callback(new Error('Final stream length must be a multiple of four'));
+	else callback();
+};
+
+PcmStream.prototype._pushBuffer = function(data) {
+	this._buffer.push(data);
+	this._bufferLength += data.length;
+};
+
+PcmStream.prototype._resetBuffer = function() {
+	this._buffer = [];
+	this._bufferLength = 0;
+};
+
+module.exports = PcmStream;
+
+}).call(this,require("buffer").Buffer)
+},{"buffer":6,"stream":28,"util":31}],38:[function(require,module,exports){
 module.exports = extend
 
 function extend() {
