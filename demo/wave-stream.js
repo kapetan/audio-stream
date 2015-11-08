@@ -35,12 +35,6 @@ var WaveStream = function() {
 	this._buffer = [EMPTY_BUFFER];
 	this._length = 0;
 
-	this.on('pipe', function(src) {
-		src.once('header', function(header) {
-			self._header = header;
-		});
-	});
-
 	this.once('finish', function() {
 		var buffer = self._buffer;
 		buffer[0] = writeHeader(self._length, self._header);
@@ -53,6 +47,10 @@ var WaveStream = function() {
 };
 
 util.inherits(WaveStream, stream.Writable);
+
+WaveStream.prototype.setHeader = function(header) {
+	this._header = header;
+};
 
 WaveStream.prototype._write = function(data, encoding, callback) {
 	this._buffer.push(data);

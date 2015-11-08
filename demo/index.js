@@ -1,4 +1,5 @@
 var audio = require('../');
+var pcm = require('pcm-stream');
 var wave = require('./wave-stream');
 
 var getUserMedia = navigator.getUserMedia ||
@@ -43,13 +44,27 @@ record.addEventListener('click', function() {
 			video: false,
 			audio: true
 		}, function(result) {
+			var w = wave();
+
 			mediaStream = window.ms = result;
-			sourceStream = audio(mediaStream, {
-				volume: volume.value / 100
-			});
+			sourceStream = audio(mediaStream, { volume: volume.value / 100 });
 
 			sourceStream
-				.pipe(wave())
+				.on('header', function(header) {
+					var channels = header.channels;
+					var sampleRate = header.sampleRate;
+
+					w.setHeader({
+						audioFormat: 1,
+						channels: channels,
+						sampleRate: sampleRate,
+						byteRate: sampleRate * channels * 2,
+						blockAlign: channels * 2,
+						bitDepth: 16
+					});
+				})
+				.pipe(pcm())
+				.pipe(w)
 				.on('url', function(url) {
 					player.src = url;
 					download.href = url;

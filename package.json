@@ -24,6 +24,7 @@
   "homepage": "https://github.com/kapetan/audio-stream#readme",
   "devDependencies": {
     "browserify": "^11.2.0",
+    "pcm-stream": "^1.0.0",
     "wzrd": "^1.3.1"
   },
   "dependencies": {

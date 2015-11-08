@@ -71,6 +71,7 @@ var AudioStream = function(media, options) {
 
 			self.duration += input.duration;
 			self.samples += numberOfSamples;
+
 			self.push(data);
 		});
 
