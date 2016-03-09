@@ -210,7 +210,9 @@ stop.addEventListener('click', function() {
 	pause.setAttribute('disabled', 'disabled');
 	stop.setAttribute('disabled', 'disabled');
 
-	mediaStream.stop();
+	mediaStream.getAudioTracks().forEach(function(track) {
+		track.stop();
+	});
 });
 
 },{"../":4,"./wave-stream":3,"pcm-stream":37}],3:[function(require,module,exports){
