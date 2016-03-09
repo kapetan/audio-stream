@@ -4,7 +4,7 @@ Stream raw audio data from a MediaStream. Only works in modern browsers that sup
 
 	npm install audio-stream
 
-See the [live recorder demo](http://kapetan.github.io/audio-stream/demo/index.html).
+See the [live recorder demo](https://kapetan.github.io/audio-stream/demo/index.html).
 
 # Usage
 

@@ -87,5 +87,7 @@ stop.addEventListener('click', function() {
 	pause.setAttribute('disabled', 'disabled');
 	stop.setAttribute('disabled', 'disabled');
 
-	mediaStream.stop();
+	mediaStream.getAudioTracks().forEach(function(track) {
+		track.stop();
+	});
 });
