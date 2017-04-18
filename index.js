@@ -98,7 +98,9 @@ var AudioStream = function(media, options) {
 			processor.disconnect();
 			gain.disconnect();
 			source.disconnect();
-			if(!options.context) context.close();
+			if(!options.context) context.close().catch(function(e) {
+				debug(e);
+			});
 		};
 
 		self.on('end', function() {
